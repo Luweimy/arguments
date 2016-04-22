@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		53F4EB1B1CCA78B900E7405E /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53F4EB1A1CCA78B900E7405E /* main.cpp */; };
+		53F4EB231CCA797100E7405E /* torch-arguments.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53F4EB211CCA797100E7405E /* torch-arguments.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -25,6 +26,8 @@
 /* Begin PBXFileReference section */
 		53F4EB171CCA78B900E7405E /* arguments */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = arguments; sourceTree = BUILT_PRODUCTS_DIR; };
 		53F4EB1A1CCA78B900E7405E /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		53F4EB211CCA797100E7405E /* torch-arguments.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "torch-arguments.cpp"; sourceTree = "<group>"; };
+		53F4EB221CCA797100E7405E /* torch-arguments.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "torch-arguments.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,6 +60,8 @@
 		53F4EB191CCA78B900E7405E /* arguments */ = {
 			isa = PBXGroup;
 			children = (
+				53F4EB211CCA797100E7405E /* torch-arguments.cpp */,
+				53F4EB221CCA797100E7405E /* torch-arguments.h */,
 				53F4EB1A1CCA78B900E7405E /* main.cpp */,
 			);
 			path = arguments;
@@ -119,6 +124,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				53F4EB1B1CCA78B900E7405E /* main.cpp in Sources */,
+				53F4EB231CCA797100E7405E /* torch-arguments.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -237,6 +243,7 @@
 				53F4EB201CCA78B900E7405E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
