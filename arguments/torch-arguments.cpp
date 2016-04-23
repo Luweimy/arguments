@@ -26,46 +26,46 @@ Commander& Commander::Option(const std::string &option, int require, const std::
     return *this;
 }
 
+std::vector<std::string> Commander::GetOptionArgs(const std::string &option)
+{
+    auto iterator = m_optionArgsMap.find(option);
+    if (iterator == m_optionArgsMap.end()) {
+        return std::vector<std::string>();
+    }
+    return iterator->second;
+}
+
+bool Commander::HadOption(const std::string &option)
+{
+    auto iterator = m_optionArgsMap.find(option);
+    if (iterator == m_optionArgsMap.end()) {
+        return false;
+    }
+    return true;
+}
+
 bool Commander::Execute(std::vector<std::string> args)
 {
     if (!this->BuildOptionArgsMap(args)) {
-        this->OnHelp();
-        return false;
+        goto error;
     }
-    for (auto opt : args) {
-        printf("[opt] %s\n", opt.c_str());
+    for (auto x : m_optionArgsMap) {
+        struct Option *option = this->GetOption(x.first);
+        if (!option || (option->callback && !option->callback(*this, x.second))) {
+            goto error;
+        }
     }
-    //        for (auto opt : m_optionMap) {
-    //
-    //        }
+    if (this->callback && !this->callback(*this, m_commandArgs)) {
+        goto error;
+    }
+    return true;
+    
+error:
+    this->OnHelp();
     return false;
 }
 
-struct Commander::Option* Commander::GetOption(const std::string &argv)
-{
-    for (int i = 0; i < m_options.size(); i++) {
-        if (m_options[i].option == argv) {
-            return &m_options[i];
-        }
-    }
-    return nullptr;
-}
-void dumpArgs(std::vector<std::string> &args) {
-    for (auto x : args) {
-        printf("[argv] %s\n", x.c_str());
-    }
-    printf("---\n");
-}
-void dumpOptionArgs(std::unordered_map<std::string, std::vector<std::string>> optionArgs) {
-    for (auto x : optionArgs) {
-        std::string args;
-        for (auto x : x.second) {
-            args += x + " ";
-        }
-        printf("[option] %s : %s\n", x.first.c_str(), args.c_str());
-    }
-}
-std::vector<std::string> Commander::GetOptionArgs(std::vector<std::string> &args, int index, int require)
+std::vector<std::string> Commander::CutOptionArgs(std::vector<std::string> &args, int index, int require)
 {
     index++;
     std::vector<std::string> optionArgs;
@@ -92,26 +92,34 @@ bool Commander::BuildOptionArgsMap(std::vector<std::string> &args)
             break;
         }
     }
-    
     for (int i = 0; i < args.size(); i++) {
         std::string argv = args[i];
         struct Option *option = this->GetOption(argv);
         if (!option) {
             continue;
         }
-        std::vector<std::string> optionArgs = this->GetOptionArgs(args, i, option->require);
+        std::vector<std::string> optionArgs = this->CutOptionArgs(args, i, option->require);
         if (optionArgs.size() != option->require) {
             return false;
         }
         m_optionArgsMap.insert(std::make_pair(argv, optionArgs));
         args.erase(args.begin() + i);
     }
- 
     for (auto argv : args) {
         m_commandArgs.push_back(argv);
     }
     args.clear();
     return m_commandArgs.size() >= this->require;
+}
+
+struct Commander::Option* Commander::GetOption(const std::string &opt)
+{
+    for (int i = 0; i < m_options.size(); i++) {
+        if (m_options[i].option == opt) {
+            return &m_options[i];
+        }
+    }
+    return nullptr;
 }
 
 void Commander::OnHelp()

@@ -20,21 +20,39 @@ namespace torch {
     class Arguments;
     class Commander {
     public:
-        typedef std::function<void()> Callback;
+        typedef std::function<bool(Commander &command, std::vector<std::string> args)> Callback;
         struct Option {
             std::string option; int require; std::string description; Callback callback;
         };
         
         Commander(const std::string &subcommand, int require, const std::string &desc, Callback callback);
         
-        Commander& Option(const std::string &option, int require, const std::string &desc, Callback callback);
+        /*
+         * 注册一个可选Option
+         */
+        Commander& Option(const std::string &option, int require, const std::string &desc, Callback callback = nullptr);
         
+        /*
+         * 获得一个Option的参数
+         * 注意：若参数不存在也会返回空数组，可能会与Option不需要参数混淆，所以请使用HadOption()接口进行判断。
+         */
+        std::vector<std::string> GetOptionArgs(const std::string &option);
+        
+        /*
+         * 判断一个Option是否存在
+         */
+        bool HadOption(const std::string &option);
+
+        /*
+         * 运行一个命令
+         * 注意：不可手动调用，由Arguments类内部处理调用
+         */
         bool Execute(std::vector<std::string> args);
         
     private:
-        struct Option* GetOption(const std::string &argv);
-        std::vector<std::string> GetOptionArgs(std::vector<std::string> &args, int index, int reqiure);
+        std::vector<std::string> CutOptionArgs(std::vector<std::string> &args, int index, int reqiure);
         bool BuildOptionArgsMap(std::vector<std::string> &optionArgs);
+        struct Option* GetOption(const std::string &opt);
         void OnHelp();
 
     public:
@@ -51,10 +69,9 @@ namespace torch {
     };
     
     
-    class Commander;
     class Arguments {
     public:
-        typedef std::function<void()> Callback;
+        typedef std::function<bool(Commander &command, std::vector<std::string> args)> Callback;
         
         Arguments();
         ~Arguments();
@@ -91,6 +108,30 @@ namespace torch {
         std::vector<std::string> m_systemArgs;
     };
     
+    static std::string StringVectorToString(const std::vector<std::string> &args) {
+        std::string ret;
+        for (auto x : args) {
+            ret += x + ", ";
+        }
+        return ret;
+    }
+    static void dumpArgs(std::vector<std::string> &args) {
+        for (auto x : args) {
+            printf("[argv] %s\n", x.c_str());
+        }
+        printf("\n");
+    }
+    
+    static void dumpOptionArgs(std::unordered_map<std::string, std::vector<std::string>> optionArgs) {
+        printf("-------options----------\n");
+        for (auto x : optionArgs) {
+            std::string args;
+            for (auto x : x.second) {
+                args += x + " ";
+            }
+            printf("[option] %s : %s\n", x.first.c_str(), args.c_str());
+        }
+    }
 }
 
 #endif /* __TORCH__ARGUMENTS__ */

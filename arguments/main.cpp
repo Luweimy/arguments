@@ -24,17 +24,23 @@ int main(int argc, const char * argv[]) {
     torch::Arguments argu;
     argu.Version("1.0").Usage("[options] <file ...>");
     
-    auto subcommand_add = argu.Command("add", 1, "add file to package", [](){
-        
+    argu.Command("add", 1, "add file to package", [](torch::Commander &command, std::vector<std::string> args){
+        return true;
     })
-    .Option("-a", 2, "add|add to", nullptr)
-    .Option("-r", 1, "add|remove from", nullptr);
+    .Option("-a", 2, "add|add to")
+    .Option("-r", 1, "add|remove from");
     
-    argu.Command("remove", 1, "remove file from package", [](){
-        
+    argu.Command("remove", 1, "remove file from package", [](torch::Commander &command, std::vector<std::string> args){
+        printf("$[cmd] remove args %lu:\n", args.size());
+        torch::dumpArgs(args);
+        if (command.HadOption("-r"))
+            printf("-r : %s\n", torch::StringVectorToString(command.GetOptionArgs("-r")).c_str());
+        if (command.HadOption("-a"))
+            printf("-a : %s\n", torch::StringVectorToString(command.GetOptionArgs("-a")).c_str());
+        return true;
     })
-    .Option("-a", 2, "remove|add to", nullptr)
-    .Option("-r", 1, "remove|remove from", nullptr);
+    .Option("-a", 2, "remove|add to")
+    .Option("-r", 1, "remove|remove from");
     
     argu.Parse(argc, argv);
     
