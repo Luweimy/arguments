@@ -59,10 +59,10 @@ namespace torch {
         std::string command;
         std::string description;
         Callback    callback;
-        int         require;
+        const int   require;
 
     private:
-        std::vector<struct Option> m_options;
+        std::vector<struct Option> m_optionRegistry;
         std::vector<std::string>   m_commandArgs;
         std::unordered_map<std::string, std::vector<std::string>> m_optionArgsMap;
         
@@ -109,28 +109,26 @@ namespace torch {
     };
     
     static std::string StringVectorToString(const std::vector<std::string> &args) {
-        std::string ret;
+        std::string ret = "[";
         for (auto x : args) {
             ret += x + ", ";
         }
-        return ret;
+        return ret + "]";
     }
-    static void dumpArgs(std::vector<std::string> &args) {
-        for (auto x : args) {
-            printf("[argv] %s\n", x.c_str());
+    static std::string StringVectorMapToString(std::unordered_map<std::string, std::vector<std::string>> optionArgs) {
+        std::string str = "{";
+        for (auto x : optionArgs) {
+            str += "\"" + x.first + "\":" + StringVectorToString(x.second) + ",\n";
         }
-        printf("\n");
+        return str + "}";
+    }
+
+    static void dumpArgs(std::vector<std::string> &args, std::string label="") {
+        printf("%s#%s\n", label.c_str(), StringVectorToString(args).c_str());
     }
     
-    static void dumpOptionArgs(std::unordered_map<std::string, std::vector<std::string>> optionArgs) {
-        printf("-------options----------\n");
-        for (auto x : optionArgs) {
-            std::string args;
-            for (auto x : x.second) {
-                args += x + " ";
-            }
-            printf("[option] %s : %s\n", x.first.c_str(), args.c_str());
-        }
+    static void dumpOptionArgs(std::unordered_map<std::string, std::vector<std::string>> optionArgs, std::string label="") {
+        printf("%s#%s\n", label.c_str(), StringVectorMapToString(optionArgs).c_str());
     }
 }
 

@@ -13,16 +13,16 @@ using namespace torch;
 // Commander
 
 Commander::Commander(const std::string &subcommand, int require, const std::string &desc, Callback callback)
+:require(require)
 {
     this->command = subcommand;
-    this->require = require;
     this->description = desc;
     this->callback = callback;
 }
 
 Commander& Commander::Option(const std::string &option, int require, const std::string &desc, Callback callback)
 {
-    m_options.push_back((struct Option){option, require, desc, callback});
+    m_optionRegistry.push_back((struct Option){option, require, desc, callback});
     return *this;
 }
 
@@ -67,7 +67,7 @@ error:
 
 std::vector<std::string> Commander::CutOptionArgs(std::vector<std::string> &args, int index, int require)
 {
-    index++;
+    args.erase(args.begin() + index);
     if (index + require > args.size()) {
         return std::move(std::vector<std::string>());
     }
@@ -95,31 +95,35 @@ bool Commander::BuildOptionArgsMap(std::vector<std::string> &args)
             break;
         }
     }
+    dumpArgs(args);
+//    dumpOptionArgs(m_optionArgsMap);
     for (int i = 0; i < args.size(); i++) {
         std::string argv = args[i];
         struct Option *option = this->GetOption(argv);
         if (!option) {
             continue;
         }
-        std::vector<std::string> optionArgs = this->CutOptionArgs(args, i, option->require);
+        std::vector<std::string> optionArgs = this->CutOptionArgs(args, i--, option->require);
         if (optionArgs.size() != option->require) {
             return false;
         }
         m_optionArgsMap.insert(std::make_pair(argv, optionArgs));
-        args.erase(args.begin() + i);
     }
-    for (auto argv : args) {
-        m_commandArgs.push_back(argv);
+    
+    int require = this->require;
+    while (require-- > 0 && args.size() > 0) {
+        m_commandArgs.push_back(args.front());
+        args.erase(args.begin());
     }
-    args.clear();
-    return m_commandArgs.size() >= this->require;
+    
+    return m_commandArgs.size() == this->require;
 }
 
 struct Commander::Option* Commander::GetOption(const std::string &opt)
 {
-    for (int i = 0; i < m_options.size(); i++) {
-        if (m_options[i].option == opt) {
-            return &m_options[i];
+    for (int i = 0; i < m_optionRegistry.size(); i++) {
+        if (m_optionRegistry[i].option == opt) {
+            return &m_optionRegistry[i];
         }
     }
     return nullptr;

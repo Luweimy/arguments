@@ -32,7 +32,7 @@ int main(int argc, const char * argv[]) {
     
     argu.Command("remove", 1, "remove file from package", [](torch::Commander &command, std::vector<std::string> args){
         printf("$[cmd] remove args %lu:\n", args.size());
-        torch::dumpArgs(args);
+        torch::dumpArgs(args, "remove");
         if (command.HadOption("-r"))
             printf("-r : %s\n", torch::StringVectorToString(command.GetOptionArgs("-r")).c_str());
         if (command.HadOption("-a"))
