@@ -87,6 +87,7 @@ std::string Commander::BuildHelpDocument(const std::string &desc)
 
 bool Commander::Execute(std::vector<std::string> args)
 {
+    dumpArgs(args, "Execute >>> "); 
     if (!this->BuildArgs(args)) {
         goto error;
     }
@@ -143,7 +144,6 @@ bool Commander::BuildArgs(std::vector<std::string> &args)
     /*
      * 先构建Option参数，然后使用参数列表中剩下的参数构建Command参数
      */
-    this->ClearArgsToCurrnetCommand(args);
     
     for (int i = 0; i < args.size(); i++) { // build option args
         std::string argv = args[i];
@@ -186,20 +186,6 @@ int Commander::GetOptionArgsNumberBeforeNextOption(const std::vector<std::string
     return num;
 }
 
-void Commander::ClearArgsToCurrnetCommand(std::vector<std::string> &args)
-{
-    /*
-     * 清除到当前命令的所有参数，用于清理和本Commander无关的参数
-     */
-    while (args.size() > 0) {
-        std::string argv = args.front();
-        args.erase(args.begin());
-        if (argv == this->command) {
-            break;
-        }
-    }
-}
-
 void Commander::OnHelp()
 {
     printf("%s", this->BuildHelpDocument().c_str());
@@ -239,7 +225,7 @@ Commander& Arguments::MainCommand()
     return *m_mainCommand;
 }
 
-Commander& Arguments::Command(const std::string &subcommand, int require, const std::string &desc, Callback callback)
+Commander& Arguments::SubCommand(const std::string &subcommand, int require, const std::string &desc, Callback callback)
 {
     Commander *commandObject = new Commander(subcommand, require, desc, callback);
     m_subcommandRegistry.push_back(commandObject);
@@ -249,10 +235,15 @@ Commander& Arguments::Command(const std::string &subcommand, int require, const 
 bool Arguments::Parse(int argc, const char * argv[])
 {
     this->BuildArgs(argc, argv);
-    Commander *command = this->GetCommand();
+    Commander *command = this->GetSubCommand();
     if (!command) {
-        this->OnHelp(); return false;
+        if (!m_mainCommand->Execute(m_systemArgs)) {
+            this->OnHelp();
+            return false;
+        }
+        return true;
     }
+    this->ClearArgsToSubCommand(m_systemArgs, command->command);
     return command->Execute(m_systemArgs);
 }
 
@@ -265,7 +256,22 @@ void Arguments::BuildArgs(int argc, const char * argv[])
     m_application = m_systemArgs.front();
 }
 
-Commander* Arguments::GetCommand()
+void Arguments::ClearArgsToSubCommand(std::vector<std::string> &args, const std::string &subcommand)
+{
+    /*
+     * 清除到指定命令的所有参数，用于清理和当前要运行的Commander无关的参数
+     */
+    while (args.size() > 0) {
+        std::string argv = args.front();
+        args.erase(args.begin());
+        if (argv == subcommand) {
+            break;
+        }
+    }
+}
+
+
+Commander* Arguments::GetSubCommand()
 {
     for (auto argv : m_systemArgs) {
         for (auto cmd : m_subcommandRegistry) {

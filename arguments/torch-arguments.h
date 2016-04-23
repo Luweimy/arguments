@@ -65,7 +65,6 @@ namespace torch {
         bool BuildArgs(std::vector<std::string> &optionArgs);
 
         int GetOptionArgsNumberBeforeNextOption(const std::vector<std::string> &args, int index);
-        void ClearArgsToCurrnetCommand(std::vector<std::string> &args);
         std::string& RightAligned(std::string &s, const int width);
         
         void OnHelp();
@@ -105,13 +104,13 @@ namespace torch {
          *  - callback: 命令处理回调，当Commander中所有Option处理完毕后才会调用，可以传null
          * 注意：subcommand互斥存在，一次命令中只能运行一个subcommand
          */
-        Commander& Command(const std::string &subcommand, int require, const std::string &desc, Callback callback);
+        Commander& SubCommand(const std::string &subcommand, int require, const std::string &desc, Callback callback);
         bool Parse(int argc, const char * argv[]);
         
     private:
         void BuildArgs(int argc, const char * argv[]);
-        
-        Commander* GetCommand();
+        void ClearArgsToSubCommand(std::vector<std::string> &args, const std::string &subcommand);
+        Commander* GetSubCommand();
         void OnHelp();
         
     private:
