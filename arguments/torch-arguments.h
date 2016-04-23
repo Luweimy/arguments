@@ -55,9 +55,9 @@ namespace torch {
         bool Execute(std::vector<std::string> args);
         
     private:
-        std::vector<std::string> CutOptionArgs(std::vector<std::string> &args, int index, int reqiure);
+        std::vector<std::string> CutArgs(std::vector<std::string> &args, int index, int reqiure);
         bool BuildArgs(std::vector<std::string> &optionArgs);
-        struct Option* GetOption(const std::string &opt);
+        struct Option* GetOptionByName(const std::string &name);
         
         int GetOptionArgsNumberBeforeNextOption(const std::vector<std::string> &args, int index);
         void ClearArgsToCurrnetCommand(std::vector<std::string> &args);

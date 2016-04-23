@@ -55,7 +55,7 @@ bool Commander::Execute(std::vector<std::string> args)
         goto error;
     }
     for (auto x : m_optionArgsMap) {
-        struct Option *option = this->GetOption(x.first);
+        struct Option *option = this->GetOptionByName(x.first);
         if (!option || (option->callback && !option->callback(*this, x.second))) {
             goto error;
         }
@@ -70,29 +70,26 @@ error:
     return false;
 }
 
-std::vector<std::string> Commander::CutOptionArgs(std::vector<std::string> &args, int index, int require)
+std::vector<std::string> Commander::CutArgs(std::vector<std::string> &args, int index, int require)
 {
     /* 
-     * 从参数列表中截取当前Option的参数，并将其参数全部从参数列表删除
+     * 从参数列表中截取当前Option/Command的参数，并将其参数全部从参数列表删除
      */
+    std::vector<std::string> extractedArgs;
     if (require < 0) {
         require = this->GetOptionArgsNumberBeforeNextOption(args, index);
     }
-
-    std::vector<std::string> optionArgs;
     if (index + require > args.size()) {
-        return std::move(optionArgs);
+        return std::move(extractedArgs);
     }
-    for (int i = index; i < index + require; i++) {
-        if (this->GetOption(args[i])) {
+    for (int i = index; (i < index + require) && (require-- > 0);) {
+        if (this->GetOptionByName(args[i])) {
             return std::move(std::vector<std::string>());
         }
-        optionArgs.push_back(args[i]);
+        extractedArgs.push_back(args[i]);
+        args.erase(args.begin() + i);
     }
-    while (require-- > 0) {
-        args.erase(args.begin() + index);
-    }
-    return std::move(optionArgs);
+    return std::move(extractedArgs);
 }
 
 bool Commander::BuildArgs(std::vector<std::string> &args)
@@ -105,12 +102,12 @@ bool Commander::BuildArgs(std::vector<std::string> &args)
     
     for (int i = 0; i < args.size(); i++) { // build option args
         std::string argv = args[i];
-        struct Option *option = this->GetOption(argv);
+        struct Option *option = this->GetOptionByName(argv);
         if (!option) {
             continue;
         }
         args.erase(args.begin() + i);
-        std::vector<std::string> optionArgs = this->CutOptionArgs(args, i--, option->require);
+        std::vector<std::string> optionArgs = this->CutArgs(args, i--, option->require);
         if (option->require > 0 && optionArgs.size() != option->require) {
             return false;
         }
@@ -118,17 +115,17 @@ bool Commander::BuildArgs(std::vector<std::string> &args)
     }
     dumpOptionArgs(m_optionArgsMap);
 
-    m_commandArgs = this->CutOptionArgs(args, 0, this->require);
+    m_commandArgs = this->CutArgs(args, 0, this->require);
     if (this->require > 0) {
         return m_commandArgs.size() == this->require;
     }
     return true;
 }
 
-struct Commander::Option* Commander::GetOption(const std::string &opt)
+struct Commander::Option* Commander::GetOptionByName(const std::string &name)
 {
     for (int i = 0; i < m_optionRegistry.size(); i++) {
-        if (m_optionRegistry[i].option == opt) {
+        if (m_optionRegistry[i].option == name) {
             return &m_optionRegistry[i];
         }
     }
@@ -145,7 +142,7 @@ int Commander::GetOptionArgsNumberBeforeNextOption(const std::vector<std::string
      */
     int num = 0;
     for (int i = index; i < args.size(); i++) {
-        if (this->GetOption(args[i])) {
+        if (this->GetOptionByName(args[i])) {
             break;
         }
         else {
