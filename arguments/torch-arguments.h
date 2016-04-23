@@ -25,8 +25,13 @@ namespace torch {
             std::string option; int require; std::string description; Callback callback;
         };
         
-        Commander(const std::string &subcommand, int require, const std::string &desc, Callback callback);
+        Commander(const std::string &subcommand, int require, const std::string &desc, Callback callback = nullptr);
         
+        /*
+         * 设置此Command的使用描述，可选，如：Usage("Usage: command [options] <file ...>")
+         */
+        Commander& Usage(const std::string &usage);
+
         /*
          * 注册一个可选Option
          */
@@ -41,12 +46,12 @@ namespace torch {
         /*
          * 判断一个Option是否存在
          */
-        bool HadOption(const std::string &option);
+        bool HasOption(const std::string &option);
         
         /*
          * 生成帮助文档
          */
-        std::string BuildHelpDocument(const std::string &desc);
+        std::string BuildHelpDocument(const std::string &desc = "");
 
         /*
          * 运行一个命令
@@ -56,17 +61,19 @@ namespace torch {
         
     private:
         std::vector<std::string> CutArgs(std::vector<std::string> &args, int index, int reqiure);
-        bool BuildArgs(std::vector<std::string> &optionArgs);
         struct Option* GetOptionByName(const std::string &name);
-        
+        bool BuildArgs(std::vector<std::string> &optionArgs);
+
         int GetOptionArgsNumberBeforeNextOption(const std::vector<std::string> &args, int index);
         void ClearArgsToCurrnetCommand(std::vector<std::string> &args);
+        std::string& RightAligned(std::string &s, const int width);
         
         void OnHelp();
 
     public:
         std::string command;
         std::string description;
+        std::string usage;
         Callback    callback;
         const int   require;
 
@@ -82,14 +89,13 @@ namespace torch {
     public:
         typedef std::function<bool(Commander &command, std::vector<std::string> args)> Callback;
         
-        Arguments();
+        Arguments(int require, const std::string &desc, Callback callback = nullptr);
         ~Arguments();
         
         Arguments& Version(const std::string &version);
         Arguments& Usage(const std::string &usage);
-        Arguments& Option(const std::string &option, int require, const std::string &desc, Callback callback);
+        Commander& MainCommand();
         
-        // command 互斥存在，同时只能存在一个cmd，并且若存在command
         /*
          * 注册一个子命令
          * 参数：
@@ -112,8 +118,8 @@ namespace torch {
         std::string              m_version;
         std::string              m_usage;
         std::string              m_application; // 程序本身的路径
-        Commander               *m_defcommand;
-        std::vector<Commander*>  m_subcommands;
+        Commander               *m_mainCommand;
+        std::vector<Commander*>  m_subcommandRegistry;
         std::vector<std::string> m_systemArgs;
     };
     

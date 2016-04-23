@@ -13,11 +13,17 @@ using namespace torch;
 // Commander
 
 Commander::Commander(const std::string &subcommand, int require, const std::string &desc, Callback callback)
-:require(require)
+:command(subcommand)
+,require(require)
+,description(desc)
+,callback(callback)
 {
-    this->command = subcommand;
-    this->description = desc;
-    this->callback = callback;
+}
+
+Commander& Commander::Usage(const std::string &usage)
+{
+    this->usage = usage;
+    return *this;
 }
 
 Commander& Commander::Option(const std::string &option, int require, const std::string &desc, Callback callback)
@@ -35,7 +41,7 @@ std::vector<std::string> Commander::GetOptionArgs(const std::string &option)
     return iterator->second;
 }
 
-bool Commander::HadOption(const std::string &option)
+bool Commander::HasOption(const std::string &option)
 {
     auto iterator = m_optionArgsMap.find(option);
     if (iterator == m_optionArgsMap.end()) {
@@ -44,9 +50,39 @@ bool Commander::HadOption(const std::string &option)
     return true;
 }
 
+std::string& Commander::RightAligned(std::string &s, const int width)
+{
+    int diff = width - (int)s.length();
+    if (diff > 0) {
+        s = s + std::string(diff, ' ');
+    }
+    return s;
+}
+
 std::string Commander::BuildHelpDocument(const std::string &desc)
 {
-    return this->description;
+    std::string help;
+    if (this->usage.length() > 0) {
+        help += this->usage + '\n';
+    }
+    if (this->description.length() > 0) {
+        help += this->description + '\n';
+    }
+    
+    int width = 3;
+    for (auto option : m_optionRegistry) {
+        if (option.option.length() > width) {
+            width = (int)option.option.length();
+        }
+    }
+    
+    help += "\noptions:\n";
+    for (auto option : m_optionRegistry) {
+        help += '\t' + this->RightAligned(option.option, width + 1);
+        help += ": " + option.description + '\n';
+    }
+    
+    return help;
 }
 
 bool Commander::Execute(std::vector<std::string> args)
@@ -92,13 +128,22 @@ std::vector<std::string> Commander::CutArgs(std::vector<std::string> &args, int 
     return std::move(extractedArgs);
 }
 
+struct Commander::Option* Commander::GetOptionByName(const std::string &name)
+{
+    for (int i = 0; i < m_optionRegistry.size(); i++) {
+        if (m_optionRegistry[i].option == name) {
+            return &m_optionRegistry[i];
+        }
+    }
+    return nullptr;
+}
+
 bool Commander::BuildArgs(std::vector<std::string> &args)
 {
     /*
      * 先构建Option参数，然后使用参数列表中剩下的参数构建Command参数
      */
     this->ClearArgsToCurrnetCommand(args);
-    dumpArgs(args, "ClearArgsToCurrnetCommand()|After");
     
     for (int i = 0; i < args.size(); i++) { // build option args
         std::string argv = args[i];
@@ -113,23 +158,12 @@ bool Commander::BuildArgs(std::vector<std::string> &args)
         }
         m_optionArgsMap.insert(std::make_pair(argv, optionArgs));
     }
-    dumpOptionArgs(m_optionArgsMap);
 
     m_commandArgs = this->CutArgs(args, 0, this->require);
     if (this->require > 0) {
         return m_commandArgs.size() == this->require;
     }
     return true;
-}
-
-struct Commander::Option* Commander::GetOptionByName(const std::string &name)
-{
-    for (int i = 0; i < m_optionRegistry.size(); i++) {
-        if (m_optionRegistry[i].option == name) {
-            return &m_optionRegistry[i];
-        }
-    }
-    return nullptr;
 }
 
 int Commander::GetOptionArgsNumberBeforeNextOption(const std::vector<std::string> &args, int index)
@@ -168,23 +202,24 @@ void Commander::ClearArgsToCurrnetCommand(std::vector<std::string> &args)
 
 void Commander::OnHelp()
 {
-    printf("%s\n", this->description.c_str());
+    printf("%s", this->BuildHelpDocument().c_str());
 }
 
 // Arguments
 
-Arguments::Arguments()
+Arguments::Arguments(int require, const std::string &desc, Callback callback)
+:m_mainCommand(nullptr)
 {
-//    m_defcommand = new Commander("", -1, "", nullptr);
+    m_mainCommand = new Commander("", require, desc, callback);
 }
 
 Arguments::~Arguments()
 {
-    for (auto cmd : m_subcommands) {
+    for (auto cmd : m_subcommandRegistry) {
         delete cmd;
     }
-    if (m_defcommand) {
-        delete m_defcommand;
+    if (m_mainCommand) {
+        delete m_mainCommand;
     }
 }
 
@@ -199,16 +234,15 @@ Arguments& Arguments::Usage(const std::string &usage)
     return *this;
 }
 
-Arguments& Arguments::Option(const std::string &option, int require, const std::string &desc, Callback callback)
+Commander& Arguments::MainCommand()
 {
-    m_defcommand->Option(option, require, desc, callback);
-    return *this;
+    return *m_mainCommand;
 }
 
 Commander& Arguments::Command(const std::string &subcommand, int require, const std::string &desc, Callback callback)
 {
     Commander *commandObject = new Commander(subcommand, require, desc, callback);
-    m_subcommands.push_back(commandObject);
+    m_subcommandRegistry.push_back(commandObject);
     return *commandObject;
 }
 
@@ -234,7 +268,7 @@ void Arguments::BuildArgs(int argc, const char * argv[])
 Commander* Arguments::GetCommand()
 {
     for (auto argv : m_systemArgs) {
-        for (auto cmd : m_subcommands) {
+        for (auto cmd : m_subcommandRegistry) {
             if (cmd->command == argv) {
                 return cmd;
             }

@@ -21,26 +21,28 @@ int main(int argc, const char * argv[]) {
     //    .Option("-r", 2, [](){
     //
     //    })
-    torch::Arguments argu;
-    argu.Version("1.0").Usage("[options] <file ...>");
+    torch::Arguments argu(1, "xpack command line tools", nullptr);
+    argu.Version("1.0").Usage("xpack [subcommands] [options] <file ...>");
     
-    argu.Command("add", 1, "add file to package", [](torch::Commander &command, std::vector<std::string> args){
+    argu.Command("add", 1, "add file to xpack packge", [](torch::Commander &command, std::vector<std::string> args){
         return true;
     })
+    .Usage("usage: xpack add [options] <file ...>")
     .Option("-a", 2, "add|add to")
     .Option("-r", 1, "add|remove from");
     
-    argu.Command("remove", -1, "remove file from package", [](torch::Commander &command, std::vector<std::string> args){
+    argu.Command("remove", -1, "remove file from xpack package", [](torch::Commander &command, std::vector<std::string> args){
         printf("$[cmd] remove args %lu:\n", args.size());
         torch::dumpArgs(args, "remove");
-        if (command.HadOption("-r"))
+        if (command.HasOption("-r"))
             printf("-r : %s\n", torch::StringVectorToString(command.GetOptionArgs("-r")).c_str());
-        if (command.HadOption("-a"))
+        if (command.HasOption("-a"))
             printf("-a : %s\n", torch::StringVectorToString(command.GetOptionArgs("-a")).c_str());
         return true;
     })
-    .Option("-a", -1, "remove|add to")
-    .Option("-r", 2, "remove|remove from");
+    .Usage("usage: xpack remove [options] <file ...>")
+    .Option("-a", -1, "fast mode, package will be fat")
+    .Option("-r", 2, "real remove, package will be cleanlily");
     
     argu.Parse(argc, argv);
     
