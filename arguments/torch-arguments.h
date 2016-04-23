@@ -51,7 +51,7 @@ namespace torch {
         /*
          * 生成帮助文档
          */
-        std::string BuildHelpDocument(const std::string &desc = "");
+        std::string BuildHelpDocument();
 
         /*
          * 运行一个命令
@@ -63,11 +63,7 @@ namespace torch {
         std::vector<std::string> CutArgs(std::vector<std::string> &args, int index, int reqiure);
         struct Option* GetOptionByName(const std::string &name);
         bool BuildArgs(std::vector<std::string> &optionArgs);
-
         int GetOptionArgsNumberBeforeNextOption(const std::vector<std::string> &args, int index);
-        std::string& RightAligned(std::string &s, const int width);
-        
-        void OnHelp();
 
     public:
         std::string command;
@@ -91,8 +87,9 @@ namespace torch {
         Arguments(int require, const std::string &desc, Callback callback = nullptr);
         ~Arguments();
         
-        Arguments& Version(const std::string &version);
-        Arguments& Usage(const std::string &usage);
+        /*
+         * 返回主命令，可对主命令添加参数预设等操作
+         */
         Commander& MainCommand();
         
         /*
@@ -111,10 +108,9 @@ namespace torch {
         void BuildArgs(int argc, const char * argv[]);
         void ClearArgsToSubCommand(std::vector<std::string> &args, const std::string &subcommand);
         Commander* GetSubCommand();
-        void OnHelp();
+        void OnHelp(Commander *command);
         
     private:
-        std::string              m_version;
         std::string              m_usage;
         std::string              m_application; // 程序本身的路径
         Commander               *m_mainCommand;

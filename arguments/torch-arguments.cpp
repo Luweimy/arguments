@@ -10,6 +10,15 @@
 
 using namespace torch;
 
+std::string& RightPadString(std::string &s, const int width)
+{
+    int diff = width - (int)s.length();
+    if (diff > 0) {
+        s = s + std::string(diff, ' ');
+    }
+    return s;
+}
+
 // Commander
 
 Commander::Commander(const std::string &subcommand, int require, const std::string &desc, Callback callback)
@@ -50,23 +59,19 @@ bool Commander::HasOption(const std::string &option)
     return true;
 }
 
-std::string& Commander::RightAligned(std::string &s, const int width)
-{
-    int diff = width - (int)s.length();
-    if (diff > 0) {
-        s = s + std::string(diff, ' ');
-    }
-    return s;
-}
-
-std::string Commander::BuildHelpDocument(const std::string &desc)
+std::string Commander::BuildHelpDocument()
 {
     std::string help;
+    
     if (this->usage.length() > 0) {
         help += this->usage + '\n';
     }
     if (this->description.length() > 0) {
         help += this->description + '\n';
+    }
+    
+    if (m_optionRegistry.size() <= 0) {
+        return help;
     }
     
     int width = 3;
@@ -78,7 +83,7 @@ std::string Commander::BuildHelpDocument(const std::string &desc)
     
     help += "\noptions:\n";
     for (auto option : m_optionRegistry) {
-        help += '\t' + this->RightAligned(option.option, width + 1);
+        help += '\t' + RightPadString(option.option, width + 1);
         help += ": " + option.description + '\n';
     }
     
@@ -87,24 +92,19 @@ std::string Commander::BuildHelpDocument(const std::string &desc)
 
 bool Commander::Execute(std::vector<std::string> args)
 {
-    dumpArgs(args, "Execute >>> "); 
     if (!this->BuildArgs(args)) {
-        goto error;
+        return false;
     }
     for (auto x : m_optionArgsMap) {
         struct Option *option = this->GetOptionByName(x.first);
         if (!option || (option->callback && !option->callback(*this, x.second))) {
-            goto error;
+            return false;
         }
     }
     if (this->callback && !this->callback(*this, m_commandArgs)) {
-        goto error;
+        return false;
     }
     return true;
-    
-error:
-    this->OnHelp();
-    return false;
 }
 
 std::vector<std::string> Commander::CutArgs(std::vector<std::string> &args, int index, int require)
@@ -186,11 +186,6 @@ int Commander::GetOptionArgsNumberBeforeNextOption(const std::vector<std::string
     return num;
 }
 
-void Commander::OnHelp()
-{
-    printf("%s", this->BuildHelpDocument().c_str());
-}
-
 // Arguments
 
 Arguments::Arguments(int require, const std::string &desc, Callback callback)
@@ -207,17 +202,6 @@ Arguments::~Arguments()
     if (m_mainCommand) {
         delete m_mainCommand;
     }
-}
-
-Arguments& Arguments::Version(const std::string &version)
-{
-    m_version = version;
-    return *this;
-}
-Arguments& Arguments::Usage(const std::string &usage)
-{
-    m_usage = usage;
-    return *this;
 }
 
 Commander& Arguments::MainCommand()
@@ -237,14 +221,18 @@ bool Arguments::Parse(int argc, const char * argv[])
     this->BuildArgs(argc, argv);
     Commander *command = this->GetSubCommand();
     if (!command) {
-        if (!m_mainCommand->Execute(m_systemArgs)) {
-            this->OnHelp();
-            return false;
+        bool ok = m_mainCommand->Execute(m_systemArgs);
+        if (!ok) {
+            this->OnHelp(m_mainCommand);
         }
-        return true;
+        return ok;
     }
     this->ClearArgsToSubCommand(m_systemArgs, command->command);
-    return command->Execute(m_systemArgs);
+    bool ok = command->Execute(m_systemArgs);
+    if (!ok) {
+        this->OnHelp(command);
+    }
+    return ok;
 }
 
 void Arguments::BuildArgs(int argc, const char * argv[])
@@ -270,7 +258,6 @@ void Arguments::ClearArgsToSubCommand(std::vector<std::string> &args, const std:
     }
 }
 
-
 Commander* Arguments::GetSubCommand()
 {
     for (auto argv : m_systemArgs) {
@@ -283,9 +270,31 @@ Commander* Arguments::GetSubCommand()
     return nullptr;
 }
 
-void Arguments::OnHelp()
+void Arguments::OnHelp(Commander *command)
 {
-    printf("%s\n", m_usage.c_str());
+    std::string help = this->m_mainCommand->BuildHelpDocument();
+    if (command != this->m_mainCommand) {
+        printf("%s\n", help.c_str()); return;
+    }
+    
+    if (m_subcommandRegistry.size() <= 0) {
+        printf("%s\n", help.c_str()); return;
+    }
+    
+    int width = 3;
+    for (auto command : m_subcommandRegistry) {
+        if (command->command.length() > width) {
+            width = (int)command->command.length();
+        }
+    }
+    
+    help += "\nsubcommands:\n";
+    for (auto command : m_subcommandRegistry) {
+        help += '\t' + RightPadString(command->command, width + 1);
+        help += ": " + command->description + '\n';
+    }
+    
+    printf("%s\n", help.c_str()); return;
 }
 
 

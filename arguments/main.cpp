@@ -21,7 +21,7 @@ int main(int argc, const char * argv[]) {
     //    .Option("-r", 2, [](){
     //
     //    })
-    torch::Arguments argu(1, "xpack command line tools", [](torch::Commander &command, std::vector<std::string> args){
+    torch::Arguments argu(1, "xpack command line tools, version 1.01", [](torch::Commander &command, std::vector<std::string> args){
         printf("$xpack args %lu:\n", args.size());
         torch::dumpArgs(args, "xpack");
         if (command.HasOption("-b"))
@@ -31,8 +31,8 @@ int main(int argc, const char * argv[]) {
         return true;
     });
     
-    argu.Version("1.0").Usage("xpack [subcommands] [options] <file ...>");
     argu.MainCommand()
+    .Usage("xpack [subcommands] [options] <file ...>")
     .Option("-a", -1, "run action")
     .Option("-b", 0, "break all");
     
