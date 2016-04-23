@@ -68,12 +68,15 @@ error:
 std::vector<std::string> Commander::CutOptionArgs(std::vector<std::string> &args, int index, int require)
 {
     index++;
-    std::vector<std::string> optionArgs;
-
     if (index + require > args.size()) {
-        return std::move(optionArgs);
+        return std::move(std::vector<std::string>());
     }
+
+    std::vector<std::string> optionArgs;
     for (int i = index; i < index + require; i++) {
+        if (this->GetOption(args[i])) {
+            return std::move(std::vector<std::string>());
+        }
         optionArgs.push_back(args[i]);
     }
     while (require-- > 0) {
