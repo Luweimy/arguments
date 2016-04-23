@@ -30,7 +30,7 @@ int main(int argc, const char * argv[]) {
     .Option("-a", 2, "add|add to")
     .Option("-r", 1, "add|remove from");
     
-    argu.Command("remove", 1, "remove file from package", [](torch::Commander &command, std::vector<std::string> args){
+    argu.Command("remove", 0, "remove file from package", [](torch::Commander &command, std::vector<std::string> args){
         printf("$[cmd] remove args %lu:\n", args.size());
         torch::dumpArgs(args, "remove");
         if (command.HadOption("-r"))
@@ -39,7 +39,7 @@ int main(int argc, const char * argv[]) {
             printf("-a : %s\n", torch::StringVectorToString(command.GetOptionArgs("-a")).c_str());
         return true;
     })
-    .Option("-a", 2, "remove|add to")
+    .Option("-a", -1, "remove|add to")
     .Option("-r", 1, "remove|remove from");
     
     argu.Parse(argc, argv);

@@ -42,6 +42,11 @@ namespace torch {
          * 判断一个Option是否存在
          */
         bool HadOption(const std::string &option);
+        
+        /*
+         * 生成帮助文档
+         */
+        std::string BuildHelpDocument(const std::string &desc);
 
         /*
          * 运行一个命令
@@ -51,8 +56,12 @@ namespace torch {
         
     private:
         std::vector<std::string> CutOptionArgs(std::vector<std::string> &args, int index, int reqiure);
-        bool BuildOptionArgsMap(std::vector<std::string> &optionArgs);
+        bool BuildArgs(std::vector<std::string> &optionArgs);
         struct Option* GetOption(const std::string &opt);
+        
+        int GetOptionArgsNumberBeforeNextOption(const std::vector<std::string> &args, int index);
+        void ClearArgsToCurrnetCommand(std::vector<std::string> &args);
+        
         void OnHelp();
 
     public:

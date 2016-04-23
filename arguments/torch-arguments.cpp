@@ -44,9 +44,14 @@ bool Commander::HadOption(const std::string &option)
     return true;
 }
 
+std::string Commander::BuildHelpDocument(const std::string &desc)
+{
+    return this->description;
+}
+
 bool Commander::Execute(std::vector<std::string> args)
 {
-    if (!this->BuildOptionArgsMap(args)) {
+    if (!this->BuildArgs(args)) {
         goto error;
     }
     for (auto x : m_optionArgsMap) {
@@ -67,12 +72,17 @@ error:
 
 std::vector<std::string> Commander::CutOptionArgs(std::vector<std::string> &args, int index, int require)
 {
-    args.erase(args.begin() + index);
-    if (index + require > args.size()) {
-        return std::move(std::vector<std::string>());
+    /* 
+     * 从参数列表中截取当前Option的参数，并将其参数全部从参数列表删除
+     */
+    if (require < 0) {
+        require = this->GetOptionArgsNumberBeforeNextOption(args, index);
     }
 
     std::vector<std::string> optionArgs;
+    if (index + require > args.size()) {
+        return std::move(optionArgs);
+    }
     for (int i = index; i < index + require; i++) {
         if (this->GetOption(args[i])) {
             return std::move(std::vector<std::string>());
@@ -81,42 +91,38 @@ std::vector<std::string> Commander::CutOptionArgs(std::vector<std::string> &args
     }
     while (require-- > 0) {
         args.erase(args.begin() + index);
-        
     }
     return std::move(optionArgs);
 }
 
-bool Commander::BuildOptionArgsMap(std::vector<std::string> &args)
+bool Commander::BuildArgs(std::vector<std::string> &args)
 {
-    while (args.size() > 0) {
-        std::string argv = args.front();
-        args.erase(args.begin());
-        if (argv == this->command) {
-            break;
-        }
-    }
-    dumpArgs(args);
-//    dumpOptionArgs(m_optionArgsMap);
-    for (int i = 0; i < args.size(); i++) {
+    /*
+     * 先构建Option参数，然后使用参数列表中剩下的参数构建Command参数
+     */
+    this->ClearArgsToCurrnetCommand(args);
+    dumpArgs(args, "ClearArgsToCurrnetCommand()|After");
+    
+    for (int i = 0; i < args.size(); i++) { // build option args
         std::string argv = args[i];
         struct Option *option = this->GetOption(argv);
         if (!option) {
             continue;
         }
+        args.erase(args.begin() + i);
         std::vector<std::string> optionArgs = this->CutOptionArgs(args, i--, option->require);
-        if (optionArgs.size() != option->require) {
+        if (option->require > 0 && optionArgs.size() != option->require) {
             return false;
         }
         m_optionArgsMap.insert(std::make_pair(argv, optionArgs));
     }
-    
-    int require = this->require;
-    while (require-- > 0 && args.size() > 0) {
-        m_commandArgs.push_back(args.front());
-        args.erase(args.begin());
+    dumpOptionArgs(m_optionArgsMap);
+
+    m_commandArgs = this->CutOptionArgs(args, 0, this->require);
+    if (this->require > 0) {
+        return m_commandArgs.size() == this->require;
     }
-    
-    return m_commandArgs.size() == this->require;
+    return true;
 }
 
 struct Commander::Option* Commander::GetOption(const std::string &opt)
@@ -127,6 +133,40 @@ struct Commander::Option* Commander::GetOption(const std::string &opt)
         }
     }
     return nullptr;
+}
+
+int Commander::GetOptionArgsNumberBeforeNextOption(const std::vector<std::string> &args, int index)
+{
+    /*
+     * 获取到下一个Option之前的所有参数的个数，用于不定参数确定要收取的参数个数
+     * 参数：
+     *  - args: 参数列表，不能包含当前Option
+     *  - index: 当前处理的列表项游标index
+     */
+    int num = 0;
+    for (int i = index; i < args.size(); i++) {
+        if (this->GetOption(args[i])) {
+            break;
+        }
+        else {
+            num++;
+        }
+    }
+    return num;
+}
+
+void Commander::ClearArgsToCurrnetCommand(std::vector<std::string> &args)
+{
+    /*
+     * 清除到当前命令的所有参数，用于清理和本Commander无关的参数
+     */
+    while (args.size() > 0) {
+        std::string argv = args.front();
+        args.erase(args.begin());
+        if (argv == this->command) {
+            break;
+        }
+    }
 }
 
 void Commander::OnHelp()
