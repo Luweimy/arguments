@@ -111,8 +111,7 @@ namespace torch {
         void OnHelp(Commander *command);
         
     private:
-        std::string              m_usage;
-        std::string              m_application; // 程序本身的路径
+        std::string              m_application;
         Commander               *m_mainCommand;
         std::vector<Commander*>  m_subcommandRegistry;
         std::vector<std::string> m_systemArgs;
@@ -133,11 +132,11 @@ namespace torch {
         return str + "}";
     }
 
-    static void dumpArgs(std::vector<std::string> &args, std::string label="") {
+    static void dumpStringVector(std::vector<std::string> &args, std::string label="") {
         printf("%s#%s\n", label.c_str(), StringVectorToString(args).c_str());
     }
     
-    static void dumpOptionArgs(std::unordered_map<std::string, std::vector<std::string>> optionArgs, std::string label="") {
+    static void dumpStringVectorMap(std::unordered_map<std::string, std::vector<std::string>> optionArgs, std::string label="") {
         printf("%s#%s\n", label.c_str(), StringVectorMapToString(optionArgs).c_str());
     }
 }

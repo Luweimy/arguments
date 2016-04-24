@@ -69,7 +69,6 @@ std::string Commander::BuildHelpDocument()
     if (this->description.length() > 0) {
         help += this->description + '\n';
     }
-    
     if (m_optionRegistry.size() <= 0) {
         return help;
     }
