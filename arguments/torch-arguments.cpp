@@ -59,7 +59,7 @@ bool Commander::HasOption(const std::string &option)
     return true;
 }
 
-std::string Commander::BuildHelpDocument()
+std::string Commander::BuildHelp()
 {
     std::string help;
     
@@ -128,8 +128,31 @@ std::vector<std::string> Commander::CutArgs(std::vector<std::string> &args, int 
     return std::move(extractedArgs);
 }
 
+int Commander::GetOptionArgsNumberBeforeNextOption(const std::vector<std::string> &args, int index)
+{
+    /*
+     * 获取到下一个Option之前的所有参数的个数，用于不定参数确定要收取的参数个数
+     * 参数：
+     *  - args: 参数列表，不能包含当前Option
+     *  - index: 当前处理的列表项游标index
+     */
+    int num = 0;
+    for (int i = index; i < args.size(); i++) {
+        if (!this->GetOptionByName(args[i])) {
+            num++;
+        }
+        else {
+            break;
+        }
+    }
+    return num;
+}
+
 struct Commander::Option* Commander::GetOptionByName(const std::string &name)
 {
+    /*
+     * 通过Option名字获取Option记录结构，找不到则返回nullptr
+     */
     for (int i = 0; i < m_optionRegistry.size(); i++) {
         if (m_optionRegistry[i].option == name) {
             return &m_optionRegistry[i];
@@ -163,26 +186,6 @@ bool Commander::BuildArgs(std::vector<std::string> &args)
         return m_commandArgs.size() == this->require;
     }
     return true;
-}
-
-int Commander::GetOptionArgsNumberBeforeNextOption(const std::vector<std::string> &args, int index)
-{
-    /*
-     * 获取到下一个Option之前的所有参数的个数，用于不定参数确定要收取的参数个数
-     * 参数：
-     *  - args: 参数列表，不能包含当前Option
-     *  - index: 当前处理的列表项游标index
-     */
-    int num = 0;
-    for (int i = index; i < args.size(); i++) {
-        if (this->GetOptionByName(args[i])) {
-            break;
-        }
-        else {
-            num++;
-        }
-    }
-    return num;
 }
 
 // Arguments
@@ -234,15 +237,6 @@ bool Arguments::Parse(int argc, const char * argv[])
     return ok;
 }
 
-void Arguments::BuildArgs(int argc, const char * argv[])
-{
-    for (int i = 0; i < argc; i++) {
-        m_systemArgs.push_back(argv[i]);
-    }
-    m_systemArgs.erase(m_systemArgs.begin());
-    m_application = m_systemArgs.front();
-}
-
 void Arguments::ClearArgsToSubCommand(std::vector<std::string> &args, const std::string &subcommand)
 {
     /*
@@ -257,8 +251,23 @@ void Arguments::ClearArgsToSubCommand(std::vector<std::string> &args, const std:
     }
 }
 
+void Arguments::BuildArgs(int argc, const char * argv[])
+{
+    /*
+     * 构建系统参数，对其进行预处理
+     */
+    for (int i = 0; i < argc; i++) {
+        m_systemArgs.push_back(argv[i]);
+    }
+    m_systemArgs.erase(m_systemArgs.begin());
+    m_application = m_systemArgs.front();
+}
+
 Commander* Arguments::GetSubCommand()
 {
+    /*
+     * 从参数列表中查找最先的一个SubCommand，若找不到会返回nullptr，若存在多个则忽略
+     */
     for (auto argv : m_systemArgs) {
         for (auto cmd : m_subcommandRegistry) {
             if (cmd->command == argv) {
@@ -271,7 +280,7 @@ Commander* Arguments::GetSubCommand()
 
 void Arguments::OnHelp(Commander *command)
 {
-    std::string help = this->m_mainCommand->BuildHelpDocument();
+    std::string help = this->m_mainCommand->BuildHelp();
     if (command != this->m_mainCommand) {
         printf("%s\n", help.c_str()); return;
     }

@@ -12,15 +12,6 @@
 #include "torch-arguments.h"
 
 int main(int argc, const char * argv[]) {
-    
-    //    .Version("1.0")
-    //    .Usage("[options] <file ...>")
-    //    .Option("-a", 1, [](){
-    //
-    //    })
-    //    .Option("-r", 2, [](){
-    //
-    //    })
     torch::Arguments argu(1, "xpack command line tools, version 1.01", [](torch::Commander &command, std::vector<std::string> args){
         printf("$xpack args %lu:\n", args.size());
         torch::DumpStringVector(args, "xpack");
