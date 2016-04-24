@@ -23,7 +23,7 @@ int main(int argc, const char * argv[]) {
     //    })
     torch::Arguments argu(1, "xpack command line tools, version 1.01", [](torch::Commander &command, std::vector<std::string> args){
         printf("$xpack args %lu:\n", args.size());
-        torch::dumpArgs(args, "xpack");
+        torch::DumpStringVector(args, "xpack");
         if (command.HasOption("-b"))
             printf("-r : %s\n", torch::StringVectorToString(command.GetOptionArgs("-b")).c_str());
         if (command.HasOption("-a"))
@@ -38,7 +38,7 @@ int main(int argc, const char * argv[]) {
     
     argu.SubCommand("add", 1, "add file to xpack packge", [](torch::Commander &command, std::vector<std::string> args){
         printf("$[cmd] add args %lu:\n", args.size());
-        torch::dumpArgs(args, "add");
+        torch::DumpStringVector(args, "add");
         if (command.HasOption("-r"))
             printf("-r : %s\n", torch::StringVectorToString(command.GetOptionArgs("-r")).c_str());
         if (command.HasOption("-a"))
@@ -51,7 +51,7 @@ int main(int argc, const char * argv[]) {
     
     argu.SubCommand("remove", -1, "remove file from xpack package", [](torch::Commander &command, std::vector<std::string> args){
         printf("$[cmd] remove args %lu:\n", args.size());
-        torch::dumpArgs(args, "remove");
+        torch::DumpStringVector(args, "remove");
         if (command.HasOption("-r"))
             printf("-r : %s\n", torch::StringVectorToString(command.GetOptionArgs("-r")).c_str());
         if (command.HasOption("-a"))

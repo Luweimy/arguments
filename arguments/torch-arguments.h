@@ -132,11 +132,11 @@ namespace torch {
         return str + "}";
     }
 
-    static void dumpStringVector(std::vector<std::string> &args, std::string label="") {
+    static void DumpStringVector(std::vector<std::string> &args, std::string label="") {
         printf("%s#%s\n", label.c_str(), StringVectorToString(args).c_str());
     }
     
-    static void dumpStringVectorMap(std::unordered_map<std::string, std::vector<std::string>> optionArgs, std::string label="") {
+    static void DumpStringVectorMap(std::unordered_map<std::string, std::vector<std::string>> optionArgs, std::string label="") {
         printf("%s#%s\n", label.c_str(), StringVectorMapToString(optionArgs).c_str());
     }
 }
