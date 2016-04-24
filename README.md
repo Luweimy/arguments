@@ -28,12 +28,11 @@ options同样也可以有参数
 - GetOptionArgs()   
 - HasOption()  
 
-```
+```c
 #include <iostream>
 #include <vector>
 #include <assert.h>
 #include "torch-arguments.h"
-
 bool OnAdd(torch::Commander &command, std::vector<std::string> args) {
     if (command.HasOption("--password")) {
         printf("password:\t%s\n", command.GetOptionArgs("--password")[0].c_str());
@@ -41,22 +40,17 @@ bool OnAdd(torch::Commander &command, std::vector<std::string> args) {
     for (auto path : args) { printf(" add: %s ... ok\n", path.c_str()); }
     return true;
 }
-
 bool OnDelete(torch::Commander &command, std::vector<std::string> args) {
     for (auto path : args) { printf(" delete: %s ... ok\n", path.c_str()); }
     return true;
 }
-
 bool OnCommit(torch::Commander &command, std::vector<std::string> args) {
     if (command.HasOption("--ignore")) {
         for (auto path : command.GetOptionArgs("--ignore")) { printf(" ignore: %s ... ok\n", path.c_str()); }
     }
-    for (auto path : args) {
-        printf(" commit: %s ... ok\n", path.c_str());
-    }
+    for (auto path : args) { printf(" commit: %s ... ok\n", path.c_str()); }
     return true;
 }
-
 bool OnCommitOptionUnlock(torch::Commander &command, std::vector<std::string> args) {
     for (auto path : args) { printf(" unlock: %s ... ok\n", path.c_str()); }
     return true;
