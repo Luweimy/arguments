@@ -10,6 +10,10 @@
 
 using namespace torch;
 
+Arguments::Callback Arguments::CallbackFail = [](torch::Commander &command, std::vector<std::string> args) {
+    return false;
+};
+
 std::string& RightPadString(std::string &s, const int width)
 {
     int diff = width - (int)s.length();
@@ -237,6 +241,28 @@ bool Arguments::Parse(int argc, const char * argv[])
     return ok;
 }
 
+std::string Arguments::BuildHelp(Commander *command)
+{
+    command = command == nullptr ? this->m_mainCommand : command;
+    std::string help = command->BuildHelp();
+    if (command != this->m_mainCommand || m_subcommandRegistry.size() <= 0) {
+        return help;
+    }
+    
+    int width = 3;
+    help += "\nsubcommands:\n";
+    for (auto command : m_subcommandRegistry) {
+        if (command->command.length() > width) {
+            width = (int)command->command.length();
+        }
+    }
+    for (auto command : m_subcommandRegistry) {
+        help += '\t' + RightPadString(command->command, width + 1);
+        help += ": " + command->description + '\n';
+    }
+    return help;
+}
+
 void Arguments::ClearArgsToSubCommand(std::vector<std::string> &args, const std::string &subcommand)
 {
     /*
@@ -280,29 +306,7 @@ Commander* Arguments::GetSubCommand()
 
 void Arguments::OnHelp(Commander *command)
 {
-    std::string help = this->m_mainCommand->BuildHelp();
-    if (command != this->m_mainCommand) {
-        printf("%s\n", help.c_str()); return;
-    }
-    
-    if (m_subcommandRegistry.size() <= 0) {
-        printf("%s\n", help.c_str()); return;
-    }
-    
-    int width = 3;
-    for (auto command : m_subcommandRegistry) {
-        if (command->command.length() > width) {
-            width = (int)command->command.length();
-        }
-    }
-    
-    help += "\nsubcommands:\n";
-    for (auto command : m_subcommandRegistry) {
-        help += '\t' + RightPadString(command->command, width + 1);
-        help += ": " + command->description + '\n';
-    }
-    
-    printf("%s\n", help.c_str()); return;
+    printf("%s\n", this->BuildHelp(command).c_str());
 }
 
 

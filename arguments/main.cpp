@@ -11,49 +11,69 @@
 #include <assert.h>
 #include "torch-arguments.h"
 
+bool OnAdd(torch::Commander &command, std::vector<std::string> args) {
+    if (command.HasOption("--password")) {
+        printf("password:\t%s\n", command.GetOptionArgs("--password")[0].c_str());
+    }
+    for (auto path : args) { printf(" add: %s ... ok\n", path.c_str()); }
+    return true;
+}
+
+bool OnDelete(torch::Commander &command, std::vector<std::string> args) {
+    for (auto path : args) { printf(" delete: %s ... ok\n", path.c_str()); }
+    return true;
+}
+
+bool OnCommit(torch::Commander &command, std::vector<std::string> args) {
+    if (command.HasOption("--ignore")) {
+        for (auto path : command.GetOptionArgs("--ignore")) { printf(" ignore: %s ... ok\n", path.c_str()); }
+    }
+    for (auto path : args) {
+        printf(" commit: %s ... ok\n", path.c_str());
+    }
+    return true;
+}
+
+bool OnCommitOptionUnlock(torch::Commander &command, std::vector<std::string> args) {
+    for (auto path : args) { printf(" unlock: %s ... ok\n", path.c_str()); }
+    return true;
+}
+
 int main(int argc, const char * argv[]) {
-    torch::Arguments argu(1, "xpack command line tools, version 1.01", [](torch::Commander &command, std::vector<std::string> args){
-        printf("$xpack args %lu:\n", args.size());
-        torch::DumpStringVector(args, "xpack");
-        if (command.HasOption("-b"))
-            printf("-r : %s\n", torch::StringVectorToString(command.GetOptionArgs("-b")).c_str());
-        if (command.HasOption("-a"))
-            printf("-a : %s\n", torch::StringVectorToString(command.GetOptionArgs("-a")).c_str());
-        return true;
-    });
+    torch::Arguments app(0, "svn command line client, version 1.0.1.");
     
-    argu.MainCommand()
-    .Usage("xpack [subcommands] [options] <file ...>")
-    .Option("-a", -1, "run action")
-    .Option("-b", 0, "break all");
+    app.MainCommand()
+    .Usage("usage: svn <subcommand> [options] [args]")
+    .Option("-h", 0, "Show help document.", torch::Arguments::CallbackFail);
     
-    argu.SubCommand("add", 1, "add file to xpack packge", [](torch::Commander &command, std::vector<std::string> args){
-        printf("$[cmd] add args %lu:\n", args.size());
-        torch::DumpStringVector(args, "add");
-        if (command.HasOption("-r"))
-            printf("-r : %s\n", torch::StringVectorToString(command.GetOptionArgs("-r")).c_str());
-        if (command.HasOption("-a"))
-            printf("-a : %s\n", torch::StringVectorToString(command.GetOptionArgs("-a")).c_str());
-        return true;
-    })
-    .Usage("usage: xpack add [options] <file ...>")
-    .Option("-a", 2, "add|add to")
-    .Option("-r", 1, "add|remove from");
+    // ./arguments add --passowrd 123 path1 path2 path3
+    std::string addDescription = "add: Put files and directories under version control.";
+    app.SubCommand("add", -1, addDescription, OnAdd)
+    .Usage("usage: add PATH...")
+    .Option("--help", 0, "Show subcommand help document", torch::Arguments::CallbackFail)
+    .Option("--force", 0, "force operation to run")
+    .Option("--depth", 1, "limit operation by depth ARG")
+    .Option("--username", 1, "specify a username ARG")
+    .Option("--password", 1, "specify a password ARG");
     
-    argu.SubCommand("remove", -1, "remove file from xpack package", [](torch::Commander &command, std::vector<std::string> args){
-        printf("$[cmd] remove args %lu:\n", args.size());
-        torch::DumpStringVector(args, "remove");
-        if (command.HasOption("-r"))
-            printf("-r : %s\n", torch::StringVectorToString(command.GetOptionArgs("-r")).c_str());
-        if (command.HasOption("-a"))
-            printf("-a : %s\n", torch::StringVectorToString(command.GetOptionArgs("-a")).c_str());
-        return true;
-    })
-    .Usage("usage: xpack remove [options] <file ...>")
-    .Option("-a", -1, "fast mode, package will be fat")
-    .Option("-r", 2, "real remove, package will be cleanlily");
+    // ./arguments delete --help
+    std::string deleteDescription = "delete: Remove files and directories from version control.";
+    app.SubCommand("delete", 1, deleteDescription, OnDelete)
+    .Usage("usage:\n\t1. delete PATH...\n\t2. delete URL...")
+    .Option("--help", 0, "Show subcommand help document", torch::Arguments::CallbackFail)
+    .Option("--force", 0, "force operation to run");
     
-    argu.Parse(argc, argv);
-    
+    // ./arguments commit ci1 ci2 ci3 --ignore ig1 ig2 ig3 --unlock uk1 uk2 uk3
+    std::string commitDescription = "commit: Send changes from your working copy to the repository.";
+    app.SubCommand("commit", -1, commitDescription, OnCommit)
+    .Usage("usage: commit [PATH...]")
+    .Option("--help", 0, "Show subcommand help document", torch::Arguments::CallbackFail)
+    .Option("--ignore", -1, "ignore PATH...")
+    .Option("--unlock", -1, "unlock PATH...", OnCommitOptionUnlock);
+
+    bool ok = app.Parse(argc, argv);
+    if (!ok) {
+        // TODO:
+    }
     return 0;
 }

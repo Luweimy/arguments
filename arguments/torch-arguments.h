@@ -41,7 +41,7 @@ namespace torch {
          *  - option: option的名字，不可重复
          *  - require: option要求的参数个数，require<0代表不定参数
          *  - desc: option的文字描述
-         *  - callback: option处理回调，当Commander中所有option处理完毕后才会调用，可以传null
+         *  - callback: option处理回调，返回值若为false则终端执行并打印文档，当Commander中所有option处理完毕后才会调用，可以传null
          * 说明：注册的option是可选的，命令中可出现也可以不出现，若出现则会先于Command回调
          */
         Commander& Option(const std::string &option, int require, const std::string &desc, Callback callback = nullptr);
@@ -97,7 +97,7 @@ namespace torch {
          * 参数：
          *  - require: MainCommand要求的参数个数要求，require<0代表不定参数
          *  - desc: MainCommand的描述信息，用于生成帮助文档
-         *  - callback: MainCommand的回调，当此命令中所有Option处理完毕后才会调用，可以传null
+         *  - callback: MainCommand的回调，返回值若为false则终端执行并打印文档，当此命令中所有Option处理完毕后才会调用，可以传null
          * 说明：可以通过MainCommand()获得主命令接口
          */
         Arguments(int require, const std::string &desc, Callback callback = nullptr);
@@ -114,7 +114,7 @@ namespace torch {
          *  - subcommand: 子命令名称
          *  - require: 子命令的要求的参数个数，require<0代表不定参数
          *  - desc: 命令的文字描述
-         *  - callback: 命令处理回调，当Commander中所有Option处理完毕后才会调用，可以传null
+         *  - callback: 命令处理回调，返回值若为false则终端执行并打印文档，当Commander中所有Option处理完毕后才会调用，可以传null
          * 注意：subcommand互斥存在，一次命令中只能运行一个subcommand
          */
         Commander& SubCommand(const std::string &subcommand, int require, const std::string &desc, Callback callback);
@@ -124,10 +124,22 @@ namespace torch {
          * 参数：
          *  - argc: 命令行参数个数
          *  - argv: 命令行参数数组指针
-         * 返回值：返回是否发生错误，若发生错误，会自动触发打印帮助文档
+         * 返回值：返回是否执行或者解析发生错误，若发生错误，会自动触发打印帮助文档
          */
         bool Parse(int argc, const char * argv[]);
+
+        /*
+         * 根据传入的desc和Usage以及所有注册的Command信息生成帮助文档
+         * 参数：
+         *  - 要生成文档的子命令，若为空则生成主命令的文档，主命令的文档会列出所有子命令
+         */
+        std::string BuildHelp(Commander *command);
         
+        /*
+         * 用于对只打算返回False的callback赋值
+         */
+        static Callback CallbackFail;
+
     private:
         void ClearArgsToSubCommand(std::vector<std::string> &args, const std::string &subcommand);
         void BuildArgs(int argc, const char * argv[]);
